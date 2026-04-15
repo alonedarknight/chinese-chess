@@ -20,14 +20,14 @@ const PieceUI = ({ piece, isSelected, onClick }) => {
     <div
       onClick={onClick}
       className={`
-        w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 shadow-lg
+        w-[7vmin] h-[7vmin] max-w-[56px] max-h-[56px] rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 shadow-lg
         ${isRed 
           ? 'bg-red-50 border-red-800 text-red-800' 
           : 'bg-gray-100 border-gray-900 text-gray-900'}
         ${isSelected ? 'ring-4 ring-yellow-400 scale-110 z-10' : 'hover:scale-105'}
       `}
     >
-      <span className="text-xl sm:text-2xl font-bold leading-none">{char}</span>
+      <span className="text-[3.5vmin] sm:text-2xl font-bold leading-none">{char}</span>
     </div>
   );
 };

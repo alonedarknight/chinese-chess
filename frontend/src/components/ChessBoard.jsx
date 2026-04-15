@@ -25,7 +25,7 @@ const ChessBoard = ({ boardState, selectedPiece, onSquareClick }) => {
                 key={`${x}-${y}`}
                 onClick={() => onSquareClick(x, y)}
                 className={`
-                  w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center relative cursor-default
+                  w-[8vmin] h-[8vmin] max-w-[64px] max-h-[64px] flex items-center justify-center relative cursor-default
                   border border-orange-200
                   ${inPalace ? 'bg-orange-200' : ''}
                   ${nearRiver ? 'border-b-4 border-b-blue-200' : ''}

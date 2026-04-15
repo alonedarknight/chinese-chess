@@ -20,7 +20,7 @@ const Game = () => {
     fetchGameState();
 
     // 2. Setup WebSocket
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS('http://localhost:8081/ws');
     const client = new Client({
       webSocketFactory: () => socket,
       connectHeaders: {
@@ -61,8 +61,8 @@ const Game = () => {
 
   const fetchGameState = async () => {
     try {
-      // We didn't have a specific API for fetching a single state yet, 
-      // but joinRoom usually sets it up. We rely on WebSocket for updates.
+      const response = await axiosClient.get(`/game/${roomId}/state`);
+      setGameState(response.data);
     } catch (err) {
       console.error('Failed to fetch initial state', err);
     }

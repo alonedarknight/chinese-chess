@@ -39,7 +39,24 @@ public class GameRoomService {
                 .status(GameRoom.RoomStatus.WAITING)
                 .build();
 
-        return gameRoomRepository.save(room);
+        room = gameRoomRepository.save(room);
+
+        // Initialize board state immediately upon room creation
+        Board board = new Board();
+        board.initializeBoard();
+        try {
+            String boardJson = objectMapper.writeValueAsString(board.getGrid());
+            GameState gameState = GameState.builder()
+                    .gameRoom(room)
+                    .boardState(boardJson)
+                    .currentTurn(GameState.PieceColor.RED)
+                    .build();
+            gameStateRepository.save(gameState);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize game state", e);
+        }
+
+        return room;
     }
 
     public List<GameRoom> getWaitingRooms() {
@@ -61,21 +78,6 @@ public class GameRoomService {
         room.setPlayerBlack(player);
         room.setStatus(GameRoom.RoomStatus.PLAYING);
         gameRoomRepository.save(room);
-
-        Board board = new Board();
-        board.initializeBoard();
-
-        try {
-            String boardJson = objectMapper.writeValueAsString(board.getGrid());
-            GameState gameState = GameState.builder()
-                    .gameRoom(room)
-                    .boardState(boardJson)
-                    .currentTurn(GameState.PieceColor.RED)
-                    .build();
-            gameStateRepository.save(gameState);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize game state", e);
-        }
 
         return room;
     }

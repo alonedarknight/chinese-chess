@@ -1,0 +1,22 @@
+# Java / Maven
+target/
+*.class
+*.log
+
+# Node / React
+node_modules/
+dist/
+.env*
+*.local
+dist-ssr
+*.pyc
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
