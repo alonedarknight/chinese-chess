@@ -139,4 +139,16 @@ public class Board {
         }
         return true;
     }
+
+    public java.util.List<int[]> getValidMoves(int fromX, int fromY) {
+        java.util.List<int[]> validMoves = new java.util.ArrayList<>();
+        for (int y = 0; y < 10; y++) {
+            for (int x = 0; x < 9; x++) {
+                if (isMoveLegal(fromX, fromY, x, y)) {
+                    validMoves.add(new int[]{x, y});
+                }
+            }
+        }
+        return validMoves;
+    }
 }

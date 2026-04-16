@@ -8,5 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface GameStateRepository extends JpaRepository<GameState, Long> {
-    Optional<GameState> findByGameRoomId(Long gameRoomId);
+    @org.springframework.data.jpa.repository.Query("SELECT gs FROM GameState gs LEFT JOIN FETCH gs.gameRoom gr LEFT JOIN FETCH gr.playerRed LEFT JOIN FETCH gr.playerBlack WHERE gr.id = :gameRoomId")
+    Optional<GameState> findByGameRoomId(@org.springframework.data.repository.query.Param("gameRoomId") Long gameRoomId);
 }

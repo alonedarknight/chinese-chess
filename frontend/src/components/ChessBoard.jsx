@@ -1,7 +1,7 @@
 import React from 'react';
 import PieceUI from './PieceUI';
 
-const ChessBoard = ({ boardState, selectedPiece, onSquareClick }) => {
+const ChessBoard = ({ boardState, selectedPiece, validMoves = [], isFlipped, onSquareClick }) => {
   const isPalace = (x, y) => {
     const isRedPalace = x >= 3 && x <= 5 && y >= 0 && y <= 2;
     const isBlackPalace = x >= 3 && x <= 5 && y >= 7 && y <= 9;
@@ -10,15 +10,24 @@ const ChessBoard = ({ boardState, selectedPiece, onSquareClick }) => {
 
   const isRiver = (y) => y === 4;
 
+  const isValidMove = (x, y) => {
+    return validMoves.some(move => move[0] === x && move[1] === y);
+  };
+
+  const rows = isFlipped ? [...Array(10).keys()].reverse() : [...Array(10).keys()];
+  const cols = isFlipped ? [...Array(9).keys()].reverse() : [...Array(9).keys()];
+
   return (
     <div className="relative inline-block p-4 bg-orange-50 rounded-lg shadow-2xl border-4 border-orange-200">
       {/* The 10x9 Grid */}
       <div className="grid grid-cols-9 bg-orange-100 border border-orange-300">
-        {boardState.map((row, y) =>
-          row.map((piece, x) => {
+        {rows.map((y) =>
+          cols.map((x) => {
+            const piece = boardState[y][x];
             const isSelected = selectedPiece?.x === x && selectedPiece?.y === y;
             const inPalace = isPalace(x, y);
             const nearRiver = isRiver(y);
+            const isHint = isValidMove(x, y);
 
             return (
               <div
@@ -50,8 +59,10 @@ const ChessBoard = ({ boardState, selectedPiece, onSquareClick }) => {
                   </div>
                 )}
 
-                {/* Coordinate Debug (Optional) */}
-                {/* <span className="absolute bottom-0 right-0 text-[8px] text-gray-400">{x},{y}</span> */}
+                {/* Valid Move Hint */}
+                {isHint && (
+                  <div className={`absolute z-20 w-5 h-5 ${piece ? 'bg-red-500' : 'bg-green-500'} bg-opacity-40 rounded-full ring-2 ring-white animate-pulse shadow-lg`}></div>
+                )}
               </div>
             );
           })
