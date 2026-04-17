@@ -1,11 +1,12 @@
 package com.cotuong.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "tblPlayer")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,12 +20,13 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String password;
 
     @Builder.Default
-    private Integer elo = 1200;
+    @Column(name = "currentElo")
+    private Integer elo = 1000;
 
     private String status; // ONLINE, OFFLINE, IN_GAME
 }

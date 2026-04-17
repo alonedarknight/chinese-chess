@@ -2,10 +2,12 @@ package com.cotuong.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "games")
+@Table(name = "tbl_game")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,22 +16,18 @@ import java.time.LocalDateTime;
 public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @OneToOne
-    @JoinColumn(name = "game_room_id")
-    private GameRoom gameRoom;
+    private Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "winner_id")
-    private User winner;
+    @JoinColumn(name = "room_id")
+    private Room room;
 
-    @Enumerated(EnumType.STRING)
-    private GameResult result; // RED_WIN, BLACK_WIN, DRAW
-
+    private LocalDateTime startedAt;
     private LocalDateTime endedAt;
 
-    public enum GameResult {
-        RED_WIN, BLACK_WIN, DRAW
-    }
+    private String result; // RED_WIN, BLACK_WIN, DRAW
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    private List<GameHistory> gameHistorys;
 }

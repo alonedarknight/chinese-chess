@@ -1,14 +1,14 @@
 package com.cotuong.controller;
 
+import com.cotuong.entity.GameHistory;
 import com.cotuong.entity.User;
+import com.cotuong.repository.GameHistoryRepository;
 import com.cotuong.repository.UserRepository;
 import com.cotuong.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,55 +21,48 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final GameHistoryRepository gameHistoryRepository;
     private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final com.cotuong.repository.EloHistoryRepository eloHistoryRepository;
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}/history")
-    public ResponseEntity<List<com.cotuong.entity.EloHistory>> getHistory(@PathVariable Long id) {
-        return ResponseEntity.ok(eloHistoryRepository.findByUserIdOrderByCreatedAtDesc(id));
-    }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
-        if (userRepository.findByUsername(request.get("username")).isPresent()) {
-            return ResponseEntity.badRequest().body("Username already exists");
+    public User register(@RequestBody User user) {
+        System.out.println("DEBUG: Entering register for user: " + user.getUsername());
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
         }
-
-        User user = User.builder()
-                .username(request.get("username"))
-                .password(passwordEncoder.encode(request.get("password")))
-                .elo(1200)
-                .status("OFFLINE")
-                .build();
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully");
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setElo(1200); // Default Elo
+        return userRepository.save(user);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.get("username"), request.get("password"))
+    public Map<String, Object> login(@RequestBody User loginRequest) {
+        System.out.println("DEBUG: Entering login for user: " + loginRequest.getUsername());
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
         );
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.get("username"));
-        final String jwt = jwtUtils.generateToken(userDetails);
+        User user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
+        String token = jwtUtils.generateToken((org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal());
         
-        User user = userRepository.findByUsername(request.get("username")).orElseThrow();
-
         Map<String, Object> response = new HashMap<>();
-        response.put("token", jwt);
+        response.put("token", token);
         response.put("user", user);
-        
-        return ResponseEntity.ok(response);
+        return response;
+    }
+
+    @GetMapping("/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userRepository.findById(id).orElseThrow();
+    }
+
+    @GetMapping("/{id}/history")
+    public List<GameHistory> getHistory(@PathVariable Long id) {
+        System.out.println("DEBUG: Fetching history for user ID: " + id);
+        List<GameHistory> history = gameHistoryRepository.findByPlayerIdOrderByCreatedAtDesc(id);
+        System.out.println("DEBUG: Found " + history.size() + " records for user ID: " + id);
+        return history;
     }
 }

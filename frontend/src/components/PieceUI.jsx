@@ -19,15 +19,40 @@ const PieceUI = ({ piece, isSelected, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`
-        w-[7vmin] h-[7vmin] max-w-[56px] max-h-[56px] rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 shadow-lg
-        ${isRed 
-          ? 'bg-red-50 border-red-800 text-red-800' 
-          : 'bg-gray-100 border-gray-900 text-gray-900'}
-        ${isSelected ? 'ring-4 ring-yellow-400 scale-110 z-10' : 'hover:scale-105'}
-      `}
+      style={{
+        width: 52,
+        height: 52,
+        borderRadius: '50%',
+        border: `3px solid ${isRed ? '#991b1b' : '#1e293b'}`,
+        background: isRed
+          ? 'radial-gradient(circle at 38% 38%, #fff5f5, #fecaca)'
+          : 'radial-gradient(circle at 38% 38%, #f8fafc, #e2e8f0)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isSelected ? 'scale(1.15) translateY(-4px)' : 'scale(1)',
+        boxShadow: isSelected
+          ? '0 8px 16px rgba(0,0,0,0.4), 0 0 0 4px #facc15'
+          : '0 3px 6px rgba(0,0,0,0.3)',
+        zIndex: isSelected ? 30 : 10,
+        position: 'relative',
+      }}
     >
-      <span className="text-[3.5vmin] sm:text-2xl font-bold leading-none">{char}</span>
+      <span
+        style={{
+          fontSize: 28,
+          fontWeight: 900,
+          lineHeight: 1,
+          color: isRed ? '#991b1b' : '#1e293b',
+          fontFamily: "'Noto Serif SC', 'SimSun', serif",
+          userSelect: 'none',
+          textShadow: '0.5px 0.5px 0px rgba(255,255,255,0.5)',
+        }}
+      >
+        {char}
+      </span>
     </div>
   );
 };

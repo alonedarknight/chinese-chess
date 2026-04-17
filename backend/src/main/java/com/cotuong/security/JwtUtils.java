@@ -15,7 +15,10 @@ import java.util.function.Function;
 
 @Component
 public class JwtUtils {
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // Fixed key for development so tokens survive restarts. 
+    // In production, this would be in application.properties/environment variables.
+    private static final String SECRET_KEY = "Y2hpbmVzZV9jaGVzc19vbmxpbmVfc2VjcmV0X2tleV9mb3JfZGV2ZWxvcG1lbnRfMjAyNDA0MTc=";
+    private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     private final int jwtExpirationMs = 86400000; // 24 hours
 
     public String generateToken(UserDetails userDetails) {

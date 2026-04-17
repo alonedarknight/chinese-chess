@@ -1,122 +1,153 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import { User, History, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
 
 const Profile = () => {
-  const { userId } = useParams();
-  const [userData, setUserData] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const { userId } = useParams();
+    const [history, setHistory] = useState([]);
+    const [profileUser, setProfileUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const loggedInUser = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => {
-    fetchProfileData();
-  }, [userId]);
+    useEffect(() => {
+        const targetId = userId || loggedInUser?.id;
+        if (!targetId) {
+            navigate('/login');
+            return;
+        }
+        fetchProfileData(targetId);
+    }, [userId]);
 
-  const fetchProfileData = async () => {
-    try {
-      const [userRes, historyRes] = await Promise.all([
-        axiosClient.get(`/users/${userId}`),
-        axiosClient.get(`/users/${userId}/history`)
-      ]);
-      setUserData(userRes.data);
-      setHistory(historyRes.data);
-    } catch (err) {
-      console.error('Failed to fetch profile', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchProfileData = async (targetId) => {
+        setLoading(true);
+        try {
+            const [userRes, historyRes] = await Promise.all([
+                axiosClient.get(`/users/${targetId}`),
+                axiosClient.get(`/users/${targetId}/history`)
+            ]);
+            setProfileUser(userRes.data);
+            setHistory(historyRes.data);
+        } catch (err) {
+            console.error('Failed to fetch profile', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+    const stats = history.reduce((acc, current) => {
+        acc.total++;
+        if (current.result === 'WIN') acc.wins++;
+        else if (current.result === 'LOSS') acc.losses++;
+        else acc.draws++;
+        return acc;
+    }, { wins: 0, losses: 0, draws: 0, total: 0 });
 
-  return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 font-sans">
-      {/* Header / Summary Card */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-600">
-            <User size={40} />
-          </div>
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">{userData?.username || 'Loading...'}</h1>
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">Competitor Profile</p>
-          </div>
+    const winRate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+
+    return (
+        <div className="min-h-screen bg-slate-950 text-white p-8">
+            <div className="max-w-5xl mx-auto">
+                <button 
+                    onClick={() => navigate('/')}
+                    className="text-slate-500 hover:text-amber-500 transition font-bold mb-8 flex items-center gap-2"
+                >
+                    ← BACK TO LOBBY
+                </button>
+
+                {/* Profile Header */}
+                <div className="flex flex-col md:flex-row gap-8 items-center mb-12 bg-slate-900/50 p-10 rounded-[40px] border border-slate-800">
+                    <div className="w-32 h-32 bg-gradient-to-br from-red-600 to-amber-600 rounded-full flex items-center justify-center text-5xl font-black shadow-2xl shadow-red-900/20">
+                        {profileUser?.username?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h1 className="text-4xl font-black mb-2">{profileUser?.username}</h1>
+                        <p className="text-slate-500 uppercase tracking-widest text-xs font-black">Professional Xiangqi Player</p>
+                        <div className="flex flex-wrap gap-4 mt-6 justify-center md:justify-start">
+                             <div className="bg-slate-800 px-6 py-2 rounded-2xl border border-slate-700">
+                                 <span className="text-xs text-slate-500 font-bold block">Current Rating</span>
+                                 <span className="text-2xl font-black text-amber-500">{profileUser?.elo} ELO</span>
+                             </div>
+                             <div className="bg-slate-800 px-6 py-2 rounded-2xl border border-slate-700">
+                                 <span className="text-xs text-slate-500 font-bold block">Win Rate</span>
+                                 <span className="text-2xl font-black text-green-500">{winRate}%</span>
+                             </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-4">
+                         <div className="text-center">
+                             <div className="text-2xl font-black text-white">{stats.wins}</div>
+                             <div className="text-[10px] text-green-500 font-black uppercase">Wins</div>
+                         </div>
+                         <div className="text-center border-l border-slate-800 pl-4">
+                             <div className="text-2xl font-black text-white">{stats.losses}</div>
+                             <div className="text-[10px] text-red-500 font-black uppercase">Losses</div>
+                         </div>
+                         <div className="text-center border-l border-slate-800 pl-4">
+                             <div className="text-2xl font-black text-white">{stats.draws}</div>
+                             <div className="text-[10px] text-slate-500 font-black uppercase">Draws</div>
+                         </div>
+                    </div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-[40px] p-8 shadow-2xl">
+                    <h3 className="text-xl font-black mb-8 italic tracking-tighter text-slate-500 uppercase">Recent Matches</h3>
+                    <div className="flex flex-col gap-4">
+                        {loading ? (
+                            <div className="py-20 text-center text-slate-600 animate-pulse font-bold uppercase tracking-widest text-sm">
+                                Loading Grandmaster History...
+                            </div>
+                        ) : history.length === 0 ? (
+                            <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                                <div className="text-4xl mb-4 opacity-20">🏆</div>
+                                <div className="text-slate-500 font-bold uppercase tracking-widest text-xs">No matches played yet</div>
+                                <button 
+                                    onClick={() => navigate('/')}
+                                    className="mt-6 px-6 py-2 bg-amber-500 text-black text-xs font-black rounded-full hover:bg-amber-400 transition"
+                                >
+                                    PLAY NOW
+                                </button>
+                            </div>
+                        ) : (
+                            history.map((record) => (
+                                <div key={record.id} className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-3xl flex items-center justify-between hover:bg-slate-800/50 transition transform hover:-translate-y-1">
+                                    <div className="flex items-center gap-6">
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black ${
+                                            record.result === 'WIN' ? 'bg-green-500/10 text-green-500' : 
+                                            record.result === 'LOSS' ? 'bg-red-500/10 text-red-500' : 'bg-slate-800 text-slate-500'
+                                        }`}>
+                                            {record.result}
+                                        </div>
+                                        <div>
+                                            <div className="text-lg font-bold">Xiangqi Match #{record.game?.id || 'N/A'}</div>
+                                            <div className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                                                Played as <span className={record.color === 'RED' ? 'text-red-500' : 'text-slate-200'}>{record.color}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="text-right">
+                                        <div className="text-xs text-slate-500 font-bold uppercase mb-1">ELO RATING</div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-slate-600 line-through text-sm">{record.eloBefore}</span>
+                                            <span className="text-amber-500 font-black text-xl tracking-tighter">
+                                                {record.eloAfter}
+                                            </span>
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                                record.eloAfter >= record.eloBefore ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+                                            }`}>
+                                                {record.eloAfter >= record.eloBefore ? '+' : ''}{record.eloAfter - record.eloBefore}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
-        <div className="text-right">
-          <p className="text-6xl font-black text-gray-900">{userData?.elo || '...'}</p>
-          <p className="text-gray-400 font-bold uppercase text-xs">Current ELO Rating</p>
-        </div>
-      </div>
-
-      {/* History Table */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 text-gray-400">
-          <History size={20} />
-          <h2 className="font-black uppercase tracking-widest text-sm">Match History</h2>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Date & Time</th>
-                <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Side</th>
-                <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Opponent</th>
-                <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Result</th>
-                <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">ELO Change</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr><td colSpan="5" className="px-8 py-10 text-center text-gray-400">Loading history...</td></tr>
-              ) : history.length === 0 ? (
-                <tr><td colSpan="5" className="px-8 py-10 text-center text-gray-400">No matches played yet.</td></tr>
-              ) : history.map((entry) => {
-                const game = entry.game;
-                const isRed = game.gameRoom.playerRed.id === parseInt(userId);
-                const opponent = isRed ? game.gameRoom.playerBlack : game.gameRoom.playerRed;
-                const isWin = game.winner?.id === parseInt(userId);
-                
-                return (
-                  <tr key={entry.id} className="hover:bg-gray-50 transition">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center space-x-2 text-gray-600 text-sm font-medium">
-                        <Clock size={14} />
-                        <span>{formatDate(entry.createdAt)}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter ${isRed ? 'bg-red-100 text-red-700' : 'bg-gray-800 text-white'}`}>
-                        {isRed ? 'Red' : 'Black'}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="font-bold text-gray-900">{opponent?.username || 'Unknown'}</span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={`font-black uppercase tracking-widest text-sm ${isWin ? 'text-green-600' : 'text-red-600'}`}>
-                        {isWin ? 'Victory' : 'Defeat'}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-right font-black text-lg">
-                      <div className={`flex items-center justify-end space-x-1 ${entry.changeAmount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {entry.changeAmount >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
-                        <span>{Math.abs(entry.changeAmount)}</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Profile;

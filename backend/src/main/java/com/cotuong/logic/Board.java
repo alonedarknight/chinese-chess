@@ -12,32 +12,32 @@ public class Board {
         this.grid = new Piece[10][9]; // 10 rows, 9 columns
     }
 
-    public void initializeBoard() {
+    public void initializeBoard(PieceFactory factory) {
         // Red Pieces (Rows 0-3)
-        setupSide("RED", 0, 2, 3);
+        setupSide(factory, "RED", 0, 2, 3);
         // Black Pieces (Rows 9-6)
-        setupSide("BLACK", 9, 7, 6);
+        setupSide(factory, "BLACK", 9, 7, 6);
     }
 
-    private void setupSide(String color, int backRow, int cannonRow, int pawnRow) {
+    private void setupSide(PieceFactory factory, String color, int backRow, int cannonRow, int pawnRow) {
         // Back row: R K B A G A B K R
-        grid[backRow][0] = PieceFactory.createPiece(Piece.PieceType.ROOK, color, 0, backRow);
-        grid[backRow][1] = PieceFactory.createPiece(Piece.PieceType.KNIGHT, color, 1, backRow);
-        grid[backRow][2] = PieceFactory.createPiece(Piece.PieceType.BISHOP, color, 2, backRow);
-        grid[backRow][3] = PieceFactory.createPiece(Piece.PieceType.ADVISOR, color, 3, backRow);
-        grid[backRow][4] = PieceFactory.createPiece(Piece.PieceType.GENERAL, color, 4, backRow);
-        grid[backRow][5] = PieceFactory.createPiece(Piece.PieceType.ADVISOR, color, 5, backRow);
-        grid[backRow][6] = PieceFactory.createPiece(Piece.PieceType.BISHOP, color, 6, backRow);
-        grid[backRow][7] = PieceFactory.createPiece(Piece.PieceType.KNIGHT, color, 7, backRow);
-        grid[backRow][8] = PieceFactory.createPiece(Piece.PieceType.ROOK, color, 8, backRow);
+        grid[backRow][0] = factory.createRook(color, 0, backRow);
+        grid[backRow][1] = factory.createKnight(color, 1, backRow);
+        grid[backRow][2] = factory.createBishop(color, 2, backRow);
+        grid[backRow][3] = factory.createAdvisor(color, 3, backRow);
+        grid[backRow][4] = factory.createGeneral(color, 4, backRow);
+        grid[backRow][5] = factory.createAdvisor(color, 5, backRow);
+        grid[backRow][6] = factory.createBishop(color, 6, backRow);
+        grid[backRow][7] = factory.createKnight(color, 7, backRow);
+        grid[backRow][8] = factory.createRook(color, 8, backRow);
 
         // Cannons
-        grid[cannonRow][1] = PieceFactory.createPiece(Piece.PieceType.CANNON, color, 1, cannonRow);
-        grid[cannonRow][7] = PieceFactory.createPiece(Piece.PieceType.CANNON, color, 7, cannonRow);
+        grid[cannonRow][1] = factory.createCannon(color, 1, cannonRow);
+        grid[cannonRow][7] = factory.createCannon(color, 7, cannonRow);
 
         // Pawns
         for (int x = 0; x <= 8; x += 2) {
-            grid[pawnRow][x] = PieceFactory.createPiece(Piece.PieceType.PAWN, color, x, pawnRow);
+            grid[pawnRow][x] = factory.createPawn(color, x, pawnRow);
         }
     }
 

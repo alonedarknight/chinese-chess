@@ -1,80 +1,164 @@
 import React from 'react';
 import PieceUI from './PieceUI';
 
+const CELL = 60;
+const RIVER_H = 48;
+const PIECE_SIZE = 52;
+const BOARD_W = 8 * CELL;          // 480px
+const TOP_H = 4 * CELL;            // 240px
+const BOT_H = 4 * CELL;            // 240px
+const TOTAL_H = TOP_H + RIVER_H + BOT_H; // 528px
+const PAD = CELL / 2;              // 30px
+
+// Board col/row → pixel coordinates
+const toPixel = (col, row) => {
+  const px = col * CELL;
+  const py = row <= 4
+    ? row * CELL
+    : TOP_H + RIVER_H + (row - 5) * CELL;
+  return { px, py };
+};
+
 const ChessBoard = ({ boardState, selectedPiece, validMoves = [], isFlipped, onSquareClick }) => {
-  const isPalace = (x, y) => {
-    const isRedPalace = x >= 3 && x <= 5 && y >= 0 && y <= 2;
-    const isBlackPalace = x >= 3 && x <= 5 && y >= 7 && y <= 9;
-    return isRedPalace || isBlackPalace;
-  };
+  const isValidMove = (x, y) => validMoves.some(m => m[0] === x && m[1] === y);
 
-  const isRiver = (y) => y === 4;
+  const svgLines = [];
 
-  const isValidMove = (x, y) => {
-    return validMoves.some(move => move[0] === x && move[1] === y);
-  };
+  // 10 horizontal lines
+  for (let r = 0; r < 10; r++) {
+    const { py } = toPixel(0, r);
+    svgLines.push(
+      <line key={`h${r}`} x1={0} y1={py} x2={BOARD_W} y2={py} stroke="#8B6914" strokeWidth="1.5" />
+    );
+  }
 
-  const rows = isFlipped ? [...Array(10).keys()].reverse() : [...Array(10).keys()];
-  const cols = isFlipped ? [...Array(9).keys()].reverse() : [...Array(9).keys()];
+  // 9 vertical lines
+  for (let c = 0; c < 9; c++) {
+    const x = c * CELL;
+    if (c === 0 || c === 8) {
+      svgLines.push(
+        <line key={`v${c}`} x1={x} y1={0} x2={x} y2={TOTAL_H} stroke="#8B6914" strokeWidth="1.5" />
+      );
+    } else {
+      svgLines.push(
+        <line key={`vt${c}`} x1={x} y1={0} x2={x} y2={TOP_H} stroke="#8B6914" strokeWidth="1.5" />
+      );
+      svgLines.push(
+        <line key={`vb${c}`} x1={x} y1={TOP_H + RIVER_H} x2={x} y2={TOTAL_H} stroke="#8B6914" strokeWidth="1.5" />
+      );
+    }
+  }
+
+  // Palace diagonals
+  const t1 = toPixel(3, 0), t2 = toPixel(5, 0), t3 = toPixel(3, 2), t4 = toPixel(5, 2);
+  svgLines.push(<line key="pt1" x1={t1.px} y1={t1.py} x2={t4.px} y2={t4.py} stroke="#8B6914" strokeWidth="1.2" />);
+  svgLines.push(<line key="pt2" x1={t2.px} y1={t2.py} x2={t3.px} y2={t3.py} stroke="#8B6914" strokeWidth="1.2" />);
+
+  const b1 = toPixel(3, 7), b2 = toPixel(5, 7), b3 = toPixel(3, 9), b4 = toPixel(5, 9);
+  svgLines.push(<line key="pb1" x1={b1.px} y1={b1.py} x2={b4.px} y2={b4.py} stroke="#8B6914" strokeWidth="1.2" />);
+  svgLines.push(<line key="pb2" x1={b2.px} y1={b2.py} x2={b3.px} y2={b3.py} stroke="#8B6914" strokeWidth="1.2" />);
+
+  const pieces = [];
+  for (let row = 0; row < 10; row++) {
+    for (let col = 0; col < 9; col++) {
+      const bCol = isFlipped ? 8 - col : col;
+      const bRow = isFlipped ? 9 - row : row;
+
+      const { px, py } = toPixel(col, row);
+      const piece = boardState[bRow]?.[bCol];
+      const isSelected = selectedPiece?.x === bCol && selectedPiece?.y === bRow;
+      const isHint = isValidMove(bCol, bRow);
+
+      pieces.push(
+        <div
+          key={`c-${col}-${row}`}
+          onClick={() => onSquareClick(bCol, bRow)}
+          className="absolute flex items-center justify-center translate-z-0"
+          style={{
+            left: px - CELL / 2,
+            top: py - CELL / 2,
+            width: CELL,
+            height: CELL,
+            cursor: piece ? 'pointer' : 'default',
+          }}
+        >
+          {piece && (
+            <PieceUI
+              piece={piece}
+              isSelected={isSelected}
+              onClick={(e) => { e.stopPropagation(); onSquareClick(bCol, bRow); }}
+            />
+          )}
+          {isHint && !piece && (
+            <div className="absolute rounded-full bg-green-500/40 ring-2 ring-white/70 animate-pulse"
+              style={{ width: 18, height: 18, zIndex: 20 }}
+            />
+          )}
+          {isHint && piece && (
+            <div className="absolute rounded-full ring-4 ring-red-500 bg-red-500/25 animate-pulse"
+              style={{ width: PIECE_SIZE + 4, height: PIECE_SIZE + 4, zIndex: 5 }}
+            />
+          )}
+        </div>
+      );
+    }
+  }
 
   return (
-    <div className="relative inline-block p-4 bg-orange-50 rounded-lg shadow-2xl border-4 border-orange-200">
-      {/* The 10x9 Grid */}
-      <div className="grid grid-cols-9 bg-orange-100 border border-orange-300">
-        {rows.map((y) =>
-          cols.map((x) => {
-            const piece = boardState[y][x];
-            const isSelected = selectedPiece?.x === x && selectedPiece?.y === y;
-            const inPalace = isPalace(x, y);
-            const nearRiver = isRiver(y);
-            const isHint = isValidMove(x, y);
+    <div className="inline-block select-none">
+      <div
+        className="rounded-2xl shadow-2xl"
+        style={{
+          padding: 12,
+          background: 'linear-gradient(145deg, #b8892e, #8a6520)',
+          border: '3px solid #6b4f18',
+        }}
+      >
+        <div
+          className="relative overflow-hidden"
+          style={{
+            width: BOARD_W + CELL,
+            height: TOTAL_H + CELL,
+            background: '#e8c878',
+            borderRadius: 8,
+            border: '2px solid #8B6914',
+          }}
+        >
+          <svg
+            className="absolute pointer-events-none"
+            style={{ left: PAD, top: PAD }}
+            width={BOARD_W}
+            height={TOTAL_H}
+          >
+            {svgLines}
+          </svg>
 
-            return (
-              <div
-                key={`${x}-${y}`}
-                onClick={() => onSquareClick(x, y)}
-                className={`
-                  w-[8vmin] h-[8vmin] max-w-[64px] max-h-[64px] flex items-center justify-center relative cursor-default
-                  border border-orange-200
-                  ${inPalace ? 'bg-orange-200' : ''}
-                  ${nearRiver ? 'border-b-4 border-b-blue-200' : ''}
-                `}
-              >
-                {/* Horizontal line */}
-                <div className="absolute w-full h-px bg-orange-400 z-0 top-1/2 left-0"></div>
-                {/* Vertical line */}
-                <div className="absolute w-px h-full bg-orange-400 z-0 top-0 left-1/2"></div>
-                
-                {/* Piece rendering */}
-                {piece && (
-                  <div className="relative z-10">
-                    <PieceUI
-                      piece={piece}
-                      isSelected={isSelected}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSquareClick(x, y);
-                      }}
-                    />
-                  </div>
-                )}
+          <div
+            className="absolute flex items-center"
+            style={{
+              left: PAD,
+              top: PAD + TOP_H,
+              width: BOARD_W,
+              height: RIVER_H,
+              background: 'linear-gradient(180deg, #dbb86a 0%, #cde4ee 30%, #b8d8e8 50%, #cde4ee 70%, #dbb86a 100%)',
+            }}
+          >
+            <div className="flex-1 flex items-center justify-center">
+              <span style={{ fontSize: '1.3rem', color: '#6a4e1e', fontWeight: 900, letterSpacing: '0.4em', fontFamily: "'Noto Serif SC','SimSun',serif" }}>
+                楚 河
+              </span>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <span style={{ fontSize: '1.3rem', color: '#6a4e1e', fontWeight: 900, letterSpacing: '0.4em', fontFamily: "'Noto Serif SC','SimSun',serif" }}>
+                漢 界
+              </span>
+            </div>
+          </div>
 
-                {/* Valid Move Hint */}
-                {isHint && (
-                  <div className={`absolute z-20 w-5 h-5 ${piece ? 'bg-red-500' : 'bg-green-500'} bg-opacity-40 rounded-full ring-2 ring-white animate-pulse shadow-lg`}></div>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
-      
-      {/* Legend/Labels */}
-      <div className="mt-4 flex justify-between text-orange-800 font-bold text-sm uppercase tracking-widest px-10">
-        <span>Tả</span>
-        <span className="text-blue-600">楚 河 (Sông Sở)</span>
-        <span className="text-blue-600">漢 界 (Hán Giới)</span>
-        <span>Hữu</span>
+          <div className="absolute" style={{ left: PAD, top: PAD, width: BOARD_W, height: TOTAL_H }}>
+            {pieces}
+          </div>
+        </div>
       </div>
     </div>
   );
