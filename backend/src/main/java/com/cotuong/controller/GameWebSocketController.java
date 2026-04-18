@@ -64,15 +64,15 @@ public class GameWebSocketController {
         if (!room.getPlayerHost().getId().equals(hostId)) return;
         if (room.getPlayerBlack() == null || !roomStateManager.isPlayerReady(roomId, room.getPlayerBlack().getId())) return;
 
-        // Start persistence match
-        Game game = roomService.startGame(roomId);
-
-        // Randomize colors
+        // Randomize colors FIRST
         boolean hostIsRed = new Random().nextBoolean();
         Long redId = hostIsRed ? room.getPlayerHost().getId() : room.getPlayerBlack().getId();
         Long blackId = hostIsRed ? room.getPlayerBlack().getId() : room.getPlayerHost().getId();
         String redName = hostIsRed ? room.getPlayerHost().getUsername() : room.getPlayerBlack().getUsername();
         String blackName = hostIsRed ? room.getPlayerBlack().getUsername() : room.getPlayerHost().getUsername();
+
+        // Start persistence match with color assignments
+        Game game = roomService.startGame(roomId, redId, blackId);
 
         // Initialize Board via Abstract Factory
         Board board = new Board();
@@ -188,10 +188,21 @@ public class GameWebSocketController {
 
     private void finishGameInternal(Integer roomId, String result) {
         GameSession session = gameRedisService.loadSession(roomId);
-        if (session == null) return;
+        if (session == null) {
+            System.out.println("WARN: finishGameInternal - No Redis session found for room " + roomId);
+            return;
+        }
+
+        System.out.println("TRACE: finishGameInternal called for room " + roomId + " with result: " + result);
 
         gameRedisService.deleteSession(roomId);
         roomStateManager.clearRoom(roomId);
-        roomService.finishGame(roomId, result);
+
+        try {
+            roomService.finishGame(roomId, result);
+        } catch (Exception e) {
+            System.out.println("ERROR: finishGameInternal failed for room " + roomId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

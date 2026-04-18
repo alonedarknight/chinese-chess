@@ -254,12 +254,7 @@ const Game = () => {
                     >
                         SURRENDER
                     </button>
-                    <button 
-                        onClick={handleLeaveRoom}
-                        className="py-2 text-slate-500 hover:text-white transition text-sm"
-                    >
-                        QUIT TO LOBBY
-                    </button>
+
                 </div>
             </div>
 

@@ -22,6 +22,12 @@ public class Game {
     @JoinColumn(name = "room_id")
     private Room room;
 
+    @Column(name = "red_player_id")
+    private Long redPlayerId;
+
+    @Column(name = "black_player_id")
+    private Long blackPlayerId;
+
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
 

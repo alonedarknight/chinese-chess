@@ -99,7 +99,7 @@ public class RoomService {
     }
 
     @Transactional
-    public Game startGame(Integer roomId) {
+    public Game startGame(Integer roomId, Long redPlayerId, Long blackPlayerId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
@@ -113,8 +113,16 @@ public class RoomService {
         Game game = Game.builder()
                 .room(room)
                 .startedAt(LocalDateTime.now())
+                .redPlayerId(redPlayerId)
+                .blackPlayerId(blackPlayerId)
                 .build();
-        return gameRepository.save(game);
+
+        Game savedGame = gameRepository.save(game);
+        System.out.println("TRACE: Game created with ID=" + savedGame.getId()
+                + " for room=" + roomId
+                + ", redPlayerId=" + redPlayerId
+                + ", blackPlayerId=" + blackPlayerId);
+        return savedGame;
     }
 
     @Transactional
@@ -122,7 +130,10 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
-        if (!"PLAYING".equals(room.getStatus())) return;
+        if (!"PLAYING".equals(room.getStatus())) {
+            System.out.println("WARN: finishGame skipped - Room " + roomId + " status is '" + room.getStatus() + "', expected 'PLAYING'");
+            return;
+        }
 
         System.out.println("TRACE: [0] finishGame called for Room ID: " + roomId + " with result: " + result);
 
@@ -133,23 +144,64 @@ public class RoomService {
         roomRepository.saveAndFlush(room);
 
         gameRepository.findFirstByRoomIdAndEndedAtIsNullOrderByStartedAtDesc(roomId)
-                .ifPresent(game -> {
-                    System.out.println("TRACE: [0.1] Found active game ID: " + game.getId());
+                .ifPresentOrElse(game -> {
+                    System.out.println("TRACE: [0.1] Found active game ID: " + game.getId()
+                            + ", redPlayerId=" + game.getRedPlayerId()
+                            + ", blackPlayerId=" + game.getBlackPlayerId());
+
                     game.setEndedAt(LocalDateTime.now());
                     game.setResult(sanitizedResult);
                     gameRepository.saveAndFlush(game);
-                    
-                    // Record game history and update ELO
-                    java.util.Map<String, Integer> eloChanges = gameHistoryService.recordGame(game, room.getPlayerHost(), room.getPlayerBlack(), sanitizedResult);
-                    System.out.println("TRACE: [5] Finished recordGame sequence.");
 
-                    // Broadcast GAME_OVER with Elo Changes
-                    Map<String, Object> gameOverMessage = new HashMap<>();
-                    gameOverMessage.put("gameStatus", "GAME_OVER");
-                    gameOverMessage.put("result", sanitizedResult);
-                    gameOverMessage.put("redEloChange", eloChanges.get("RED"));
-                    gameOverMessage.put("blackEloChange", eloChanges.get("BLACK"));
-                    messagingTemplate.convertAndSend("/topic/game/" + roomId + "/events", gameOverMessage);
+                    // Use actual color assignments from Game entity
+                    Long redId = game.getRedPlayerId();
+                    Long blackId = game.getBlackPlayerId();
+
+                    if (redId == null || blackId == null) {
+                        // Fallback for legacy games created before color tracking
+                        System.out.println("WARN: Game " + game.getId() + " missing color IDs, using room host/guest as fallback");
+                        redId = room.getPlayerHost().getId();
+                        blackId = room.getPlayerBlack() != null ? room.getPlayerBlack().getId() : null;
+                    }
+
+                    if (redId == null || blackId == null) {
+                        System.out.println("ERROR: Cannot record game - missing player IDs. redId=" + redId + ", blackId=" + blackId);
+                        return;
+                    }
+
+                    final Long finalRedId = redId;
+                    final Long finalBlackId = blackId;
+
+                    User redPlayer = userRepository.findById(finalRedId)
+                            .orElseThrow(() -> new RuntimeException("Red player not found: " + finalRedId));
+                    User blackPlayer = userRepository.findById(finalBlackId)
+                            .orElseThrow(() -> new RuntimeException("Black player not found: " + finalBlackId));
+
+                    // Record game history and update ELO
+                    try {
+                        Map<String, Integer> eloChanges = gameHistoryService.recordGame(game, redPlayer, blackPlayer, sanitizedResult);
+                        System.out.println("TRACE: [5] Finished recordGame. ELO changes: RED=" + eloChanges.get("RED") + ", BLACK=" + eloChanges.get("BLACK"));
+
+                        // Broadcast GAME_OVER with Elo Changes
+                        Map<String, Object> gameOverMessage = new HashMap<>();
+                        gameOverMessage.put("gameStatus", "GAME_OVER");
+                        gameOverMessage.put("result", sanitizedResult);
+                        gameOverMessage.put("redEloChange", eloChanges.get("RED"));
+                        gameOverMessage.put("blackEloChange", eloChanges.get("BLACK"));
+                        messagingTemplate.convertAndSend("/topic/game/" + roomId + "/events", gameOverMessage);
+                    } catch (Exception e) {
+                        System.out.println("ERROR: recordGame failed for game " + game.getId() + ": " + e.getMessage());
+                        e.printStackTrace();
+                        // Still broadcast GAME_OVER even if ELO recording fails
+                        Map<String, Object> gameOverMessage = new HashMap<>();
+                        gameOverMessage.put("gameStatus", "GAME_OVER");
+                        gameOverMessage.put("result", sanitizedResult);
+                        gameOverMessage.put("redEloChange", 0);
+                        gameOverMessage.put("blackEloChange", 0);
+                        messagingTemplate.convertAndSend("/topic/game/" + roomId + "/events", gameOverMessage);
+                    }
+                }, () -> {
+                    System.out.println("ERROR: No active game (endedAt IS NULL) found for room " + roomId);
                 });
     }
 
@@ -207,22 +259,30 @@ public class RoomService {
 
         if (!"PLAYING".equals(room.getStatus())) return;
 
-        String winnerColor;
-        if (room.getPlayerHost().getId().equals(playerId)) {
-            winnerColor = "BLACK";
+        // Find active game to determine actual color assignments
+        Game activeGame = gameRepository.findFirstByRoomIdAndEndedAtIsNullOrderByStartedAtDesc(roomId).orElse(null);
+
+        String result;
+        if (activeGame != null && activeGame.getRedPlayerId() != null) {
+            // Use actual color from Game entity
+            if (playerId.equals(activeGame.getRedPlayerId())) {
+                result = "BLACK_WIN";
+            } else {
+                result = "RED_WIN";
+            }
         } else {
-            winnerColor = "RED";
+            // Fallback: determine by room position
+            if (room.getPlayerHost().getId().equals(playerId)) {
+                result = "BLACK_WIN";
+            } else {
+                result = "RED_WIN";
+            }
         }
 
-        String result = winnerColor + "_WIN (Opponent disconnected)";
-        finishGame(roomId, result);
+        System.out.println("TRACE: forfeitGame - Room " + roomId + ", playerId=" + playerId + ", result=" + result);
 
-        // Notify client
-        Map<String, Object> event = new HashMap<>();
-        event.put("gameStatus", "GAME_OVER");
-        event.put("result", result);
-        messagingTemplate.convertAndSend("/topic/game/" + roomId + "/events", event);
-        messagingTemplate.convertAndSend("/topic/game/" + roomId, "REFRESH");
+        // finishGame already broadcasts GAME_OVER with ELO changes
+        finishGame(roomId, result);
     }
 
     @Transactional
