@@ -15,9 +15,7 @@ const Navbar = () => {
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
       <div className="flex items-center space-x-12">
-        <NavLink to="/" className="text-2xl font-black text-gray-900 tracking-tighter">
-          XIANGQI<span className="text-blue-600">.MS</span>
-        </NavLink>
+        {/* Logo removed as per user request */}
         
         <div className="flex space-x-8">
           <NavLink 
@@ -39,7 +37,7 @@ const Navbar = () => {
             className={({ isActive }) => `flex items-center space-x-2 font-bold transition ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
           >
             <UserCircle size={20} />
-            <span>My Profile</span>
+            <span>Profile</span>
           </NavLink>
         </div>
       </div>

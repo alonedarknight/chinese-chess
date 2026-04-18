@@ -101,12 +101,7 @@ const Lobby = () => {
             >
               CREATE ROOM
             </button>
-            <button
-              onClick={handleLogout}
-              className="p-3 text-slate-400 hover:text-white transition"
-            >
-              Logout
-            </button>
+
           </div>
         </div>
 
