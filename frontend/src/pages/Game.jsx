@@ -17,7 +17,7 @@ const Game = () => {
     const [drawOffer, setDrawOffer] = useState(null);
     const [showDeclined, setShowDeclined] = useState(false);
     const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false);
-    
+
     const stompClient = useRef(null);
     const trayRef = useRef(null);
     const user = JSON.parse(localStorage.getItem('user'));
@@ -61,7 +61,7 @@ const Game = () => {
                         setTimeout(() => setShowDeclined(false), 3000);
                     }
                 });
-                
+
                 // Also listen to room events for rematch sync
                 stompClient.current.subscribe(`/topic/room/${roomId}`, (message) => {
                     if (message.body === 'REFRESH_ROOM') {
@@ -139,7 +139,7 @@ const Game = () => {
             if (clickedPiece && clickedPiece.color === session.currentTurn) {
                 // Ensure it's our piece
                 const isMyPiece = (session.currentTurn === 'RED' && session.redPlayerId === user.id) ||
-                                  (session.currentTurn === 'BLACK' && session.blackPlayerId === user.id);
+                    (session.currentTurn === 'BLACK' && session.blackPlayerId === user.id);
                 if (isMyPiece) {
                     setSelectedPiece({ x, y, piece: clickedPiece });
                     fetchValidMoves(x, y);
@@ -222,12 +222,12 @@ const Game = () => {
 
     const myColor = session.redPlayerId === user.id ? 'RED' : 'BLACK';
     const opponentColor = myColor === 'RED' ? 'BLACK' : 'RED';
-    const isFlipped = myColor === 'RED'; 
-    
+    const isFlipped = myColor === 'RED';
+
     // Assign values for panels
     const myName = myColor === 'RED' ? session.redPlayerName : session.blackPlayerName;
     const myTimeRemaining = myColor === 'RED' ? redTimer : blackTimer;
-    
+
     const opponentName = opponentColor === 'RED' ? session.redPlayerName : session.blackPlayerName;
     const opponentTimeRemaining = opponentColor === 'RED' ? redTimer : blackTimer;
 
@@ -242,13 +242,13 @@ const Game = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                    <button 
+                    <button
                         onClick={handleDrawRequest}
                         className="py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold border border-slate-700 transition"
                     >
                         OFFER DRAW
                     </button>
-                    <button 
+                    <button
                         onClick={handleSurrender}
                         className="py-3 bg-red-900/20 hover:bg-red-900/40 text-red-500 rounded-xl font-bold border border-red-900/30 transition"
                     >
@@ -264,11 +264,11 @@ const Game = () => {
                     <span>{session.currentTurn === 'RED' ? "Red Path" : "Black Path"}</span>
                     <span>Phòng: {roomId}</span>
                 </div>
-                
+
                 <div className="bg-amber-900/20 p-4 rounded-[40px] shadow-2xl border-4 border-amber-900/10">
-                    <ChessBoard 
-                        boardState={session.board.grid} 
-                        selectedPiece={selectedPiece} 
+                    <ChessBoard
+                        boardState={session.board.grid}
+                        selectedPiece={selectedPiece}
                         validMoves={validMoves}
                         isFlipped={isFlipped}
                         onSquareClick={onSquareClick}
@@ -293,13 +293,13 @@ const Game = () => {
                         <h2 className="text-2xl font-bold mb-2">CẦU HÒA?</h2>
                         <p className="text-slate-400 mb-8">Đối thủ muốn kết thúc ván đấu với kết quả hòa. Bạn có đồng ý?</p>
                         <div className="flex gap-4">
-                            <button 
+                            <button
                                 onClick={() => sendDrawResponse(false)}
                                 className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold"
                             >
                                 TỪ CHỐI
                             </button>
-                            <button 
+                            <button
                                 onClick={() => sendDrawResponse(true)}
                                 className="flex-1 py-3 bg-amber-500 text-black hover:bg-amber-400 rounded-xl font-bold"
                             >
@@ -313,7 +313,7 @@ const Game = () => {
             {/* Status Toasts */}
             {showDeclined && (
                 <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-3 rounded-full font-bold shadow-2xl animate-in slide-in-from-top duration-500 z-[120]">
-                    Ối! Đối thủ đã từ chối hòa ⚔️
+                    Đối thủ đã từ chối hòa
                 </div>
             )}
 
@@ -325,13 +325,13 @@ const Game = () => {
                         <h2 className="text-2xl font-bold mb-2">ĐẦU HÀNG?</h2>
                         <p className="text-slate-400 mb-8">Bạn có chắc chắn muốn đầu hàng và chấp nhận thất bại?</p>
                         <div className="flex gap-4">
-                            <button 
+                            <button
                                 onClick={() => setShowSurrenderConfirm(false)}
                                 className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold"
                             >
                                 HỦY BỎ
                             </button>
-                            <button 
+                            <button
                                 onClick={confirmSurrender}
                                 className="flex-1 py-3 bg-red-600 text-white hover:bg-red-500 rounded-xl font-bold shadow-lg shadow-red-900/20"
                             >
@@ -346,12 +346,11 @@ const Game = () => {
             {gameOver && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[100] p-6">
                     <div className="max-w-md w-full text-center">
-                        <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${
-                            (gameOver.result.startsWith(myColor)) ? 'bg-amber-500 shadow-amber-500/40' : 'bg-slate-700 shadow-slate-900/40'
-                        }`}>
-                             <span className="text-5xl">
+                        <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ${(gameOver.result.startsWith(myColor)) ? 'bg-amber-500 shadow-amber-500/40' : 'bg-slate-700 shadow-slate-900/40'
+                            }`}>
+                            <span className="text-5xl">
                                 {gameOver.result.includes('DRAW') ? '🤝' : (gameOver.result.startsWith(myColor) ? '🏆' : '💀')}
-                             </span>
+                            </span>
                         </div>
                         <h2 className="text-5xl font-black mb-4 italic tracking-tighter">TRẬN ĐẤU KẾT THÚC</h2>
                         <div className="text-3xl font-bold mb-2 uppercase tracking-widest">
@@ -365,29 +364,27 @@ const Game = () => {
                                 )
                             )}
                         </div>
-                        
+
                         {/* Elo Change Display */}
                         <div className="mb-8 flex items-center justify-center gap-2">
                             <span className="text-slate-500 font-bold uppercase text-xs tracking-widest">ELO RATING</span>
-                            <span className={`text-xl font-black ${
-                                (myColor === 'RED' ? gameOver.redEloChange : gameOver.blackEloChange) >= 0 ? 'text-green-500' : 'text-red-500'
-                            }`}>
+                            <span className={`text-xl font-black ${(myColor === 'RED' ? gameOver.redEloChange : gameOver.blackEloChange) >= 0 ? 'text-green-500' : 'text-red-500'
+                                }`}>
                                 {(myColor === 'RED' ? gameOver.redEloChange : gameOver.blackEloChange) >= 0 ? '+' : ''}
                                 {myColor === 'RED' ? gameOver.redEloChange : gameOver.blackEloChange}
                             </span>
                         </div>
-                        
+
                         <div className="flex flex-col gap-4">
-                            <button 
+                            <button
                                 onClick={handleRematch}
                                 disabled={isRematching}
-                                className={`w-full py-4 font-black rounded-2xl transition transform hover:scale-105 shadow-xl shadow-amber-900/20 ${
-                                    isRematching ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-amber-500 text-black hover:bg-amber-400'
-                                }`}
+                                className={`w-full py-4 font-black rounded-2xl transition transform hover:scale-105 shadow-xl shadow-amber-900/20 ${isRematching ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-amber-500 text-black hover:bg-amber-400'
+                                    }`}
                             >
                                 {isRematching ? 'ĐANG VỀ PHÒNG...' : 'TÁI ĐẤU / VỀ PHÒNG'}
                             </button>
-                            <button 
+                            <button
                                 onClick={handleLeaveRoom}
                                 className="w-full py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition"
                             >
