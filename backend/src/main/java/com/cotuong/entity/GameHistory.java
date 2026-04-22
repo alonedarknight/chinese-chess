@@ -18,11 +18,12 @@ public class GameHistory {
 
     @ManyToOne
     @JoinColumn(name = "player_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"password"})
     private User player;
 
     @ManyToOne
     @JoinColumn(name = "game_id")
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"room", "gameHistorys", "games"})
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"room", "gameHistorys", "games", "hibernateLazyInitializer", "handler"})
     private Game game;
 
     private Integer eloBefore;

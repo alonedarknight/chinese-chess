@@ -20,6 +20,7 @@ public class Game {
 
     @ManyToOne
     @JoinColumn(name = "room_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"playerHost", "playerBlack", "lobby", "games", "hibernateLazyInitializer", "handler"})
     private Room room;
 
     @Column(name = "red_player_id")
