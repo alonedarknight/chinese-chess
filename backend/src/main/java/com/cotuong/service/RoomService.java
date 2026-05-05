@@ -287,6 +287,12 @@ public class RoomService {
 
     @Transactional
     public void deleteRoom(Integer roomId) {
+        // Nullify room reference in games so history is preserved
+        List<Game> games = gameRepository.findByRoomId(roomId);
+        for (Game game : games) {
+            game.setRoom(null);
+            gameRepository.save(game);
+        }
         roomRepository.deleteById(roomId);
     }
 }

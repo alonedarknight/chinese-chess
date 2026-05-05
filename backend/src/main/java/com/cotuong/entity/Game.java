@@ -35,6 +35,6 @@ public class Game {
     private String result; // RED_WIN, BLACK_WIN, DRAW
 
     @JsonIgnore
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "game", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<GameHistory> gameHistorys;
 }
